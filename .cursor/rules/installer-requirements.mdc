@@ -1,0 +1,30 @@
+---
+description: Standalone installer packaging rules — no git, no network deps at install time
+alwaysApply: true
+---
+
+# PAE Installer Requirements
+
+The distributable installer zip **must** be fully standalone. Recipients will not have git, GitHub access, or guaranteed internet during install.
+
+## Naming
+
+The installer zip is always named `PAE-<version>.zip` where `<version>` comes from `procedure_gui/__init__.__version__` (e.g. `PAE-1.8.0.zip`).
+
+## No Git Dependencies
+
+- `requirements.txt` must **never** contain `git+https://` or any VCS URL.
+- Private packages (e.g. `scos2000-mib-tools`) must be bundled as pre-built wheels in a `vendor/` directory inside the zip.
+- `install.bat` and `install.sh` install from `vendor/` first, then `requirements.txt` for public PyPI packages.
+
+## Build Process
+
+Use `build_release.sh` to produce the zip. It must:
+1. Build wheels for any vendored packages into `vendor/`.
+2. Copy all application code (excluding `.git`, `__pycache__`, `.venv`, dev artifacts).
+3. Include `install.bat`, `install.sh`, `install_linux.sh`, `run_gui.bat`, `run_gui.sh`, `run_pae.sh`.
+4. Output to `dist/PAE-<version>.zip`.
+
+## Verification
+
+After building, the zip must be installable on a clean machine with only Python 3.10+ — no git, no GitHub tokens, no network access beyond PyPI.

@@ -1,0 +1,38 @@
+---
+description: CRITICAL — All MIB, telecommand, and telemetry data must be processed locally. Never send satellite operations data to cloud services.
+alwaysApply: true
+---
+
+# MIB & Satellite Data — Local Processing Only
+
+**This rule is mandatory and overrides all other considerations.**
+
+## Prohibited Actions
+
+The following data types must NEVER be sent to any cloud service, external API, or remote endpoint outside the local network:
+
+- **MIB data** — Mission Information Base entries, parameter definitions, calibration curves, TC/TM packet structures, SCOS-2000 database contents
+- **Telecommand (TC) data** — Command IDs, command parameters, command sequences, PUS service definitions, TC payloads
+- **Telemetry (TM) data** — Telemetry packets, parameter values, housekeeping data, TM packet structures, SPIDs
+- **Satellite configuration** — Spacecraft IDs, orbital parameters, ground station configs, communication parameters
+- **MIB delta documents** — Aurora MIB analysis files (e.g. `Aurora_MIB_Delta_Analysis_*.docx`), FSW version change records
+
+## Required Behaviour
+
+1. **All analysis of MIB/TC/TM data must happen locally** — Use local Python scripts, local tools, local databases only
+2. **Document generation must be local** — Use `python-docx`, local LaTeX, or similar local-only libraries
+3. **Code generation from MIB data must be local** — SPELL procedures, TCL scripts, test frameworks generated from MIB content must be built by local scripts
+4. **If a task requires sending MIB/TC/TM data externally, STOP and ask the user for permission first**
+5. **InfluxDB, PostgreSQL, and Grafana on the local network (192.168.2.x) are permitted** — These are the project's own SOCC infrastructure
+
+## Permitted Operations
+
+- Reading MIB `.docx` files locally with `python-docx`
+- Querying local InfluxDB/PostgreSQL for telemetry
+- Sending TCs to local DSS simulators (Docker or Raspberry Pi)
+- Processing telemetry from local satellites
+- Generating procedures and test scripts from locally-extracted MIB data
+
+## When In Doubt
+
+**Stop and ask:** "This task involves MIB/TC/TM data. Should I proceed with local-only processing, or do you want to handle this differently?"

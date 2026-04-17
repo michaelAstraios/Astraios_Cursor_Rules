@@ -1,0 +1,80 @@
+---
+description: Aurora mission-specific context including subsystems, TM/TC mappings, flight rules, and PUS services
+alwaysApply: true
+---
+
+# Aurora Mission Context
+
+## Platform & Ground System
+
+- **Spacecraft:** Aurora LEO constellation
+- **Platform:** OHB (SmartLEO-class, SAVOIR-aligned avionics)
+- **Ground System:** GMV HiFly/AutoFly (SPELL-based automation)
+- **SRDB:** AUR_V50000.0
+- **Orbit:** LEO (< 2000 km)
+- **Bus:** Regulated 28 V ± 4 V (24–34 V range)
+- **Redundancy:** Cold-redundant OBC (PM-A/PM-B), dual TTC chains, dual CAN bus
+
+## Subsystems & FOP Prefixes
+
+| Tag | Subsystem | FOP Prefix | Scope |
+|-----|-----------|------------|-------|
+| C-12 | Payload (Comms) | COP/NOP_PLD_ | Channelizer, GPSDO, EPCs, SSPA, PCL, modes |
+| C-13 | Payload (OISL) | COP/NOP_PLD_ | Mode ladder, unit power, OISL, DRA |
+| CDH | C&DH | COP/NOP_CDH_ | PM, RM, PDIO, CAN, GNSS, CPDU, SW images |
+| EPS | Electrical Power | COP/NOP_EPS_ | SADA, battery, BCR, PDU, LCL |
+| FDIR | Fault Management | COP_FDIR_ | Safe-mode verify, FDIR on/off |
+| GNC | Guidance/Navigation | COP/NOP_GNC_ | Sensors, actuators, attitude modes, calibration |
+| PROP | Propulsion | COP/NOP_PROP_ | Hall-effect EP, cathode, PMA, passivation |
+| PUS | PUS Services | NOP_PUS_ | Services 1–21 + 128–131, 176 |
+| SYS | System | COP/NOP_SYS_ | AOS/LOS, checkouts, FSW, modes, disposal |
+| TCS | Thermal | COP/NOP_TCS_ | Heater control, FDIR |
+| TTC | TT&C | COP/NOP_TTC_ | Transceivers, RF config, ranging |
+
+## Key TM Mnemonics (V5000)
+
+| Mnemonic | Parameter | Subsystem |
+|----------|-----------|-----------|
+| EP1E040N | Bus voltage (24–34 V) | EPS |
+| EP1E060I | Bus/charge current | EPS |
+| EP1E080S | Fault flags / PDU state | EPS |
+| COME00AS | Carrier lock status | TTC |
+| COME010N | RSSI / antenna selection | TTC |
+| THRE010T | Thermal zone temperature | TCS |
+| ESME010A | SADA angle | EPS |
+| ESME020S | SADA mode | EPS |
+| AGOE000S | GNC attitude mode | GNC |
+
+## Key TC Mnemonics (V5000)
+
+| Mnemonic | PUS Service | Purpose |
+|----------|-------------|---------|
+| W80C0001 | PUS(128,1) | Spacecraft mode transition |
+| W81C0001 | PUS(129,1) | Equipment activation |
+| W81C0003 | PUS(129,3) | Equipment selection (redundancy switch) |
+| W03C0005 | PUS(3,5) | Enable HK report (SID enable) |
+| W20C0201 | PUS(20,201) | Read parameter value |
+| W20C2003 | PUS(20,203) | Write parameter value |
+| EC1C1701 | PUS(17,1) | Connection test |
+| W19C0005 | PUS(19,5) | Disable event-action definition |
+
+## Aurora Flight Rules
+
+| Rule | Gate | Condition |
+|------|------|-----------|
+| FR-01 | Conjunction screen | No burn if Pc >= 1e-4 without FD sign-off |
+| FR-04 | LOS margin | No critical ops within 15 min of predicted LOS |
+| FR-05 | SSPA thermal | TX enable < 55°C, shutdown > 70°C |
+| FR-06 | Propulsion valve | Tank T/P in corridor before valve operations |
+| FR-08 | Space weather | No GNC calibration if Kp >= 7 |
+| FR-11 | Two-operator | Dual concurrence for CRIT-1/CRIT-2 ops |
+
+## Valid PUS Services on Aurora
+
+Standard: 1, 2, 3, 5, 6, 9, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21
+OHB private: 128 (Mode Mgmt), 129 (Device Mgmt), 131 (Reconfiguration), 176
+
+## Spacecraft Modes
+
+SAFE → ACQUISITION → TRANSFER → NOMINAL (and reverse transitions per mode state machine).
+SAFE mode: sun-pointing, payload OFF, load shedding active, FDIR autonomous.

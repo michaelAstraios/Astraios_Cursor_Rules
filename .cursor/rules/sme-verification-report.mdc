@@ -1,0 +1,102 @@
+---
+description: SME Verification Report structure, section numbering, and content rules for per-subsystem FOP reviews
+globs: "**/*SME*Verification*.md,**/*FOP*Verification*.md,**/*SME*Report*.md"
+alwaysApply: false
+---
+
+# SME Verification Report Format
+
+## Document Header
+
+```markdown
+# <SUBSYSTEM> FOP SME Verification Report
+## Aurora LEO Constellation — OHB Platform / GMV HiFly-AutoFly Ground System
+
+**Date:** <date>
+**Author:** Satellite Operations Specialist (Senior MOC Team Member)
+**SRDB:** AUR_V50000.0
+**Classification:** Mission Operations — For Internal Use
+**Document Version:** 1.0
+```
+
+## Required Top-Level Sections
+
+Every SME report must include these numbered sections:
+
+1. **Subsystem Overview** — Architecture, FDIR hierarchy, key TM parameters
+2. **FOP-by-FOP Verification** — Individual FOP reviews (the bulk of the document)
+3. **TM Impact Map** — TC-to-TM direct/indirect impact matrices
+4. **Cross-Procedure Dependencies** — Sequencing, mutual exclusions, prerequisite chains
+5. **Consolidated Gaps & Recommendations** — Severity-ranked issue register
+6. **Web Research Notes** — Standards references, best practices, bibliography
+
+Subsection numbers MUST match their parent: e.g., `## 3.1` and `## 3.2` under `# 3.0`.
+
+## Per-FOP Section Numbering — CRITICAL
+
+Within each FOP, subsections MUST be numbered **sequentially starting from 1**. If a section is absent (no content), skip it entirely — do NOT leave gaps in the numbering.
+
+The canonical section order is:
+
+1. Expanded Description
+2. Preconditions
+3. Expected TCs
+4. Expected TM Verification
+5. Direct TM Impacts
+6. Indirect TM Impacts
+7. Safety Constraints
+8. Gaps/Issues
+9. Web Research Notes
+
+If a FOP only has sections 1, 2, 3, 7, 9 from the canonical list, number them as **1, 2, 3, 4, 5** — not 1, 2, 3, 7, 9.
+
+## FOP Entry Format
+
+```markdown
+### FOP <N>: <FOP_NAME>
+
+**Category:** NOP | COP | TOP | **Current Script Version:** <version>
+
+#### 1. Expanded Description
+<paragraph with operational context, step-by-step expected sequence>
+
+#### 2. Preconditions
+| Category | Requirement |
+|----------|-------------|
+
+#### 3. Expected TCs
+| TC | PUS Service | Purpose |
+|----|-------------|---------|
+
+#### 4. Expected TM Verification
+| After TC | TM Check | Criterion |
+|----------|----------|-----------|
+
+#### 5. Direct TM Impacts
+| Parameter | Change | Cause |
+|-----------|--------|-------|
+
+#### 6. Indirect TM Impacts
+| Subsystem | Parameter | Effect |
+|-----------|-----------|--------|
+
+#### 7. Safety Constraints
+| Aspect | Assessment |
+|--------|------------|
+
+#### 8. Gaps/Issues
+| # | Issue | Severity | Recommendation |
+|---|-------|----------|----------------|
+
+#### 9. Web Research Notes
+- bullet points with standards references
+```
+
+## Gap Severity Levels
+
+| Severity | Meaning |
+|----------|---------|
+| **CRITICAL** | Must fix before operational use — wrong TC, dangerous behavior |
+| **HIGH** | Significant operational risk — missing verifications, safety gaps |
+| **MODERATE** | Should fix — incomplete logic, missing edge cases |
+| **LOW** | Nice to fix — documentation, naming, style |

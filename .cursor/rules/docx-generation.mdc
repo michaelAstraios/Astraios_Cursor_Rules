@@ -1,0 +1,62 @@
+---
+description: Word document generation conventions using python-docx for FOP documentation with SRDB/MIB enrichment
+globs: "**/generate_docx*.py,**/generate_c13*.py"
+alwaysApply: false
+---
+
+# DOCX Generation Conventions
+
+## Architecture
+
+The `generate_docx.py` script reads SPELL scripts from `SPELL_Scripts/Updated_Scripts/<SUBSYSTEM>/` and SME reports from markdown files, then generates a formatted Word document with:
+
+1. **Main body** — Per-subsystem FOP catalog (chapters by subsystem)
+2. **Appendices A–I** — Full SME verification reports (one per subsystem)
+
+## Appendix Order
+
+| Appendix | Subsystem | Source File |
+|----------|-----------|-------------|
+| A | FDIR | FDIR_FOP_Verification_Report.md |
+| B | SYS | SME_SYS_FOP_Verification_Report.md |
+| C | PROP | SME_PROP_FOP_Verification_Report.md |
+| D | EPS | EPS_FOP_SME_Verification_Report.md |
+| E | GNC | GNC_FOP_SME_Verification_Report.md |
+| F | TTC | SME_TTC_FOP_Verification_Report.md |
+| G | CDH | CDH_FOP_SME_Verification_Report.md |
+| H | C-12 | C12_Payload_FOP_SME_Verification_Report.md |
+| I | C-13 | C-13_Payload_SME_Verification_Report.md |
+
+## Subsystem Processing Order
+
+```python
+SUBSYSTEM_ORDER = ["C-12", "C-13", "CDH", "EPS", "FDIR",
+                   "GNC", "PROP", "PUS", "SYS", "TCS", "TTC"]
+```
+
+## MIB/SRDB Enrichment
+
+The generator uses `mib.db` (SQLite) to enrich TC/TM tables:
+- TC mnemonics resolve to descriptions, PUS service type, argument definitions
+- TM parameters resolve to descriptions, units, calibration curves, enum values
+- Logical names (e.g., `EPS_BUS_V`) map to V5000 mnemonics via `LOGICAL_TM_MAP`
+
+## Markdown-to-DOCX Heading Mapping
+
+| Markdown | DOCX Style | Context |
+|----------|------------|---------|
+| `#` | Heading 1 | Top-level report sections |
+| `##` | Heading 2 | Subsections, FOP group headers |
+| `###` | Heading 3 | Individual FOP titles |
+| `####` | Heading 4 | Per-FOP subsections (numbered) |
+| `#####` | Heading 5 | Sub-subsections |
+
+Appendix headings use a distinct "APPENDIX" style, not numbered chapters.
+
+## Table Formatting Rules
+
+- All markdown pipe tables convert to Word tables with header row formatting
+- TC tables: bold mnemonic column, PUS service in parenthetical format
+- TM tables: include units from MIB where available
+- Use `WD_TABLE_ALIGNMENT.CENTER` for numeric columns
+- Maximum table width fits A4 portrait with 2.54 cm margins

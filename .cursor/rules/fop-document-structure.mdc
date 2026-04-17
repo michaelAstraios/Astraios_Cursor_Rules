@@ -1,0 +1,75 @@
+---
+description: FOP Script Documentation formatting conventions for procedure catalog markdown and DOCX output
+globs: "**/FOP_Script_Documentation*.md"
+alwaysApply: false
+---
+
+# FOP Script Documentation Format
+
+## Document Header
+
+Every FOP Script Documentation file starts with:
+
+```markdown
+# FOP Script Documentation
+## Mission Sequence Procedures for HiFly/Autofly
+
+**Generated:** <date>
+**SRDB Version:** AUR_V50000.0
+**Format:** SPEL (Python)
+**Total Procedures:** <count>
+```
+
+## Subsystem Index
+
+Procedures are grouped by subsystem in this order:
+C-12, C-13, CDH, EPS, FDIR, GNC, PROP, PUS, SYS, TCS, TTC
+
+## Per-Procedure Structure
+
+Each FOP entry follows this exact template:
+
+```markdown
+#### <FOP_NAME>
+
+**Type**: NOP | COP | TOP
+**Description**: <one-line summary>
+**Prerequisites**: <semicolon-separated list>
+**Warnings**: <operational warnings>
+**Constraints**: <timing/resource constraints or "None">
+**Exit Conditions**: <success criteria>
+
+##### Procedure Steps
+
+| Step | Action |
+|------|--------|
+| 1    | <action description — include TM/TC mnemonics inline> |
+
+##### Telecommands Used
+
+| TC Command | PUS Service |
+|------------|-------------|
+| W80C0001   | PUS(128)    |
+
+##### Telemetry Verification
+
+| Check Key | Expected |
+|-----------|----------|
+| <TM mnemonic or logical name> | <expected value or method> |
+
+##### PPF Parameters
+
+| Parameter | Usage |
+|-----------|-------|
+| <PARAM_NAME> | Used in procedure |
+```
+
+## Formatting Rules
+
+- Separate each FOP with `---` horizontal rule
+- Use `####` (h4) for FOP names, `#####` (h5) for subsections
+- TC mnemonics: use V5000 names (e.g., `W80C0001`, `W81C0003`, `EC1C1701`)
+- TM mnemonics: use V5000 names (e.g., `EP1E040N`, `COME00AS`, `THRE010T`)
+- PUS services: format as `PUS(type,subtype)` e.g., `PUS(3,5)`, `PUS(129,1)`
+- All tables use pipe syntax with header separator row
+- FOP types: NOP (Normal), COP (Contingency), TOP (Test)

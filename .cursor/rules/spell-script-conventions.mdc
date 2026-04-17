@@ -1,0 +1,115 @@
+---
+description: SPELL procedure script conventions for Aurora HiFly/AutoFly SPELL runtime
+globs: "**/*.py"
+alwaysApply: false
+---
+
+# SPELL Procedure Script Conventions
+
+## Target Runtime
+
+GMV HiFly / AutoFly SPELL runtime (Python 2.7 + SPELL primitives). All procedures run under AutoFly orchestration.
+
+## Script Header Block
+
+Every SPELL script must have this header (80-char `#` borders):
+
+```python
+####################################################################################################
+#
+# NAME              : <FOP_NAME>
+# DESCRIPTION       : <one-line summary>
+# CRITICALITY       : <CRIT-1|CRIT-2|CRIT-3|Nominal>
+# PREREQUISITES     : <semicolon-separated preconditions>
+# WARNINGS          : <operational warnings>
+# CONSTRAINTS       : <flight rules that apply, e.g. FR-04, FR-08>
+# ENTRY CONDITIONS  : <starting spacecraft state>
+# EXIT CONDITIONS   : <success criteria>
+#
+# SME MERGE SOURCE  : HiFly_SPELL_Procedures_Pseudocode.md §<section>
+# STANDARDS         : <ECSS/CCSDS references>
+# FLIGHT RULES      : <FR-NN list>
+#
+# VERSION           : <M.N>
+# SRDB              : AUR_V50000.0
+# PPF REQUIRED      : True|False
+# SPACECRAFT        : LS0001
+# CATEGORY          : NOP|COP|TOP
+#
+####################################################################################################
+```
+
+## Required Imports
+
+```python
+from json_utils import load_parameters
+from tm_packet_processor import process_tm_packet, verify_tp_status
+from aurora_ops import (criticality_banner, freeze_evidence,
+                        fr04_los_margin_gate, fr05_sspa_thermal_gate,
+                        fr06_prop_valve_gate, fr08_space_weather_gate,
+                        fr11_two_operator_concur, flight_director_go)
+```
+
+## Procedure Skeleton
+
+```python
+PARAMS = load_parameters(ARGS['input_file'])
+
+criticality_banner('<FOP_NAME>', '<CRIT-N>',
+                   standards=[...], flight_rules=[...])
+
+# Freeze forensic evidence before corrective actions (COP only)
+freeze_evidence('<PREFIX>', lookback_s=600)
+
+# Flight rule gates (call applicable ones)
+fr04_los_margin_gate()
+fr08_space_weather_gate()
+
+# === PROCEDURE STEPS ===
+# Step 1: Subscribe and log
+Event('Starting <FOP_NAME>: <purpose>')
+sess_tc = SubscribeTmPackets({'pustype': 1, 'pussubtype': 7})
+
+# Step 2: Operator GO
+Prompt('Confirm GO for <action>.', Type=OK_CANCEL)
+
+# Step N: Send TC
+Send(command='<TC_MNEMONIC>', args=[[...]])
+
+# Step N+1: Verify
+Verify([['<TM_PARAM>', eq, <expected>]], Timeout=30)
+
+# Final: Log completion
+Event('Completed <FOP_NAME>')
+```
+
+## Safety Rules for Every Procedure
+
+1. Precondition check (SC mode, power, TTC link-up) before commanding
+2. `Verify` after every irreversible or state-changing TC
+3. Post-condition assertion before `Finish()`
+4. `Prompt(...OK_CANCEL)` gate before irreversible/hazardous steps
+5. Two-operator concurrence on CRIT-1/CRIT-2 steps
+6. On verification failure: `Display(...ERROR)` + `Pause()` for operator decision
+7. Never modify FDIR thresholds in the same pass without re-baseline
+
+## SPELL Primitives Reference
+
+| Primitive | Purpose |
+|-----------|---------|
+| `Send(command, args, verify, Timeout)` | Uplink TC with optional inline verify |
+| `Verify([checks], Timeout, Retries)` | TM verification with timeout |
+| `GetTM(param, Wait, ValueFormat)` | Read single TM value |
+| `Prompt(msg, Type)` | Operator interaction (OK_CANCEL, YES_NO, LIST) |
+| `Display(msg, Severity)` | Operator display (preferred over Event per GMV) |
+| `WaitFor(condition)` | Wait for time or TM condition |
+| `SetSharedData(key, val)` | Inter-procedure data sharing |
+| `GetSharedData(key)` | Read shared data from another procedure |
+| `SubscribeTmPackets(filter)` | Subscribe to TM packet stream |
+| `StartProc(name, args, Blocking)` | Chain to sub-procedure |
+
+## TC/TM Naming Conventions
+
+- **V5000 TC mnemonics**: `W80C0001` (PUS 128,1), `W81C0003` (PUS 129,3), `EC1C1701` (PUS 17,1)
+- **V5000 TM mnemonics**: `EP1E040N` (bus voltage), `COME00AS` (carrier lock), `THRE010T` (thermal)
+- **Logical names** (map to V5000 via `aurora_ops.TM_MAP`): `EPS_BUS_V`, `TTC_LOCK_STATUS`, `SC_MODE`

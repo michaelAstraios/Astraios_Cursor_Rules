@@ -1,0 +1,67 @@
+---
+description: Markdown formatting conventions for all satellite operations documentation files
+globs: "**/*.md"
+alwaysApply: false
+---
+
+# Markdown Operations Document Conventions
+
+## Document Metadata Block
+
+Every operations document starts with a metadata block using bold key-value pairs:
+
+```markdown
+**Date:** <DD Month YYYY>
+**Author:** Satellite Operations Specialist (Senior MOC Team Member)
+**SRDB:** AUR_V50000.0
+**Classification:** Mission Operations — For Internal Use
+```
+
+## Section Numbering Rules
+
+- Top-level sections: `## 1.0 Title` or `## 1. Title`
+- Subsections must match parent: `### 1.1`, `### 1.2` under `## 1.0`
+- Per-FOP subsections: always sequential from 1 (no gaps — see sme-verification-report rule)
+- Use `---` horizontal rules to separate FOP entries
+
+## Table Conventions
+
+All tabular data uses markdown pipe tables with header separator:
+
+```markdown
+| Column A | Column B | Column C |
+|----------|----------|----------|
+| data     | data     | data     |
+```
+
+- Bold key fields in first column for emphasis: `| **CRITICAL** | ... |`
+- TC/TM mnemonics appear unformatted in tables (no backticks needed)
+- Use `—` (em dash) for empty/not-applicable cells, not blank
+
+## Inline Formatting
+
+- **Bold** for subsystem names, severity levels, flight rules, critical warnings
+- `Code` backticks for TC/TM mnemonics when inline in prose (e.g., `EP1E040N`)
+- PUS services: `PUS(type,subtype)` format — e.g., `PUS(3,5)`, `PUS(129,1)`
+- Temperature: always Celsius with ° symbol (e.g., 55°C, -20°C)
+- Voltage: always include unit (e.g., 28 V, 24–34 V range)
+- Current: mA or A with context (e.g., 50–300 mA drive current)
+
+## Cross-References
+
+- Use markdown anchor links for Table of Contents: `[Section Title](#anchor)`
+- FOP cross-references: use full name (e.g., "see COP_SYS_Boot_Recovery (FOP 10)")
+- Standards: use full designation on first reference, abbreviated thereafter
+
+## Content Patterns
+
+When describing a FOP's expanded description, include:
+1. What the procedure does (operational context)
+2. Step-by-step expected sequence (numbered list)
+3. How the current script implements it vs what's expected
+4. Any deviations or template misapplications
+
+When describing gaps/issues:
+1. Number each gap (G<FOP>.1, G<FOP>.2, etc.)
+2. State severity: CRITICAL, HIGH, MODERATE, LOW
+3. Provide specific remediation recommendation
