@@ -1,0 +1,120 @@
+---
+description: Operational conventions for constellation management code — fleet state model, contact scheduling, orbit management, telemetry tagging, and API patterns
+globs: "**/constellation/**,**/fleet/**,**/gateway/**"
+alwaysApply: false
+---
+
+# Constellation Operations Conventions
+
+These conventions apply when working on constellation management code, gateway services, fleet orchestration, or constellation configuration files.
+
+## Constellation Definition Schema
+
+- **Walker Notation:** Express constellation geometry as `i:t/p/f` — inclination : total satellites / planes / phase factor.
+- **Shell Definitions:** Each shell has: altitude (km), inclination (deg), number of planes, satellites per plane, RAAN spacing, phase offset between adjacent planes.
+- **Per-Satellite Config:** Every satellite config must include: unique SCID, shell ID, plane number, slot number within plane, mean anomaly at epoch, parking altitude (if applicable), operational altitude, and a pointer to the satellite-level config file.
+- **Parking vs Operational:** Distinguish parking orbit (post-separation, pre-raise) from operational orbit. Parking altitude should be low enough for natural decay within 5 years if orbit-raise fails (25-year rule compliance as fallback).
+
+## Fleet State Model
+
+Every satellite in the constellation occupies exactly one operational state:
+
+| State | Description | Allowed Transitions |
+|-------|-------------|---------------------|
+| Launch | Post-separation, pre-contact | Commissioning, Failed |
+| Commissioning | Initial checkout and subsystem activation | Parking, Failed |
+| Parking | Holding in parking orbit awaiting raise window | Raising, Deorbiting, Failed |
+| Raising | Active orbit-raise campaign in progress | Operational, Parking (abort), Failed |
+| Operational | On-station, serving mission objectives | Maintenance, Deorbiting, Failed |
+| Maintenance | Temporary off-station for anomaly resolution or firmware update | Operational, Deorbiting, Failed |
+| Deorbiting | Active disposal or controlled reentry | Passivated |
+| Passivated | End-of-life, RF OFF, no commanding | (terminal) |
+| Failed | Unresponsive or unrecoverable | Deorbiting (if recoverable), Passivated |
+
+Fleet-level health aggregation:
+- **Green:** Satellite in Operational state, all subsystems nominal
+- **Yellow:** Satellite in Maintenance or degraded subsystem performance
+- **Red:** Satellite in Failed state or critical anomaly active
+- **Fleet Coverage %:** (Operational satellites meeting coverage criteria) / (required constellation size) x 100
+
+## Contact Scheduling Rules
+
+### Priority Allocation
+
+| Priority | Category | Examples |
+|----------|----------|----------|
+| P0 | Safety of flight | Conjunction avoidance maneuver upload, safe mode recovery |
+| P1 | Anomaly resolution | Health recovery commanding, diagnostic TM download |
+| P2 | Commissioning | Orbit-raise commands, checkout sequences |
+| P3 | Routine operations | Scheduled TM download, firmware updates, housekeeping |
+| P4 | Optimization | Non-urgent parameter tuning, experiment data |
+
+### Scheduling Conventions
+
+- **Elevation mask:** Minimum 5 deg for TM/TC, 10 deg for high-rate data downlink.
+- **Conflict resolution:** When multiple satellites compete for the same ground station pass, highest priority wins. Equal priority breaks ties by: time since last contact (longest wins), then buffer fill level (fullest wins).
+- **Guard time:** Minimum 30 seconds between consecutive contacts on the same antenna for slew and reacquisition.
+- **Store-and-forward:** Track on-board buffer fill percentage. Trigger emergency contact allocation when buffer exceeds 85% capacity.
+
+## Orbit Management Conventions
+
+### Maneuver Campaign Structure
+
+Every orbit management campaign follows four phases:
+
+1. **Plan** — Flight dynamics computes maneuver parameters (delta-V, direction, timing). Verified against conjunction screen and ground contact schedule.
+2. **Arm** — Upload maneuver parameters to satellite. Confirm armed status in TM. Operator GO gate for CRIT-1/CRIT-2 maneuvers.
+3. **Execute** — Maneuver fires autonomously at planned epoch. Monitor thrust TM in real-time or at next contact.
+4. **Verify** — Post-maneuver orbit determination. Compare achieved vs planned delta-V. Update fleet ephemeris.
+
+### Thresholds and Triggers
+
+- **In-track drift:** Correct when satellite drifts > 0.5 deg from assigned mean anomaly slot (configurable per constellation).
+- **Cross-track:** Correct when RAAN deviation exceeds tolerance for inter-plane phasing.
+- **Altitude band:** Maintain operational altitude within +/- configured tolerance (typically 1-5 km).
+- **Collision avoidance override:** CA maneuvers take absolute priority over station-keeping. Cancel or defer any conflicting SK maneuver.
+- **Post-maneuver verification window:** Allow at least 2 orbit periods after maneuver completion before scheduling next maneuver on the same satellite.
+
+## Fleet Telemetry Conventions
+
+### InfluxDB Tagging Strategy
+
+All fleet telemetry written to InfluxDB must include these tags:
+
+| Tag | Description | Example |
+|-----|-------------|---------|
+| `satellite` | Unique satellite display name | `Lightspeed P01` |
+| `scid` | Spacecraft ID (numeric) | `101` |
+| `shell` | Shell identifier | `polar`, `inclined` |
+| `plane` | Orbital plane number | `1`, `2`, `3` |
+| `state` | Current operational state | `operational`, `raising` |
+| `mission` | Mission identifier | `L`, `C` |
+
+### Fleet-Level Aggregates
+
+Define constellation-wide measurements alongside per-satellite telemetry:
+- `fleet.coverage_pct` — percentage of required coverage met
+- `fleet.operational_count` — number of satellites in Operational state
+- `fleet.health_score` — weighted composite (green=1.0, yellow=0.5, red=0.0) / total
+- `fleet.conjunction_alerts` — active CDM alerts above monitoring threshold
+- `fleet.mean_altitude_km` — per-shell mean altitude
+- `fleet.drift_index` — RMS in-track drift across operational satellites
+
+### Out-of-Family Detection
+
+Flag any satellite whose telemetry deviates from the fleet baseline by more than 2 sigma for continuous parameters or mismatches expected discrete state. Common parameters to monitor fleet-wide:
+- Bus voltage, battery SoC, solar array current
+- Thermal zone temperatures
+- Attitude error magnitude
+- Reaction wheel speeds
+- Comm link margin (Eb/No)
+
+## API Contract Patterns
+
+Fleet operation endpoints follow these conventions (consistent with existing `/api/constellation/*` patterns):
+
+- **Bulk queries** return per-satellite status arrays: `{ satellites: [{ scid, name, state, health, ... }] }`
+- **Fleet-wide commands** (e.g., orbit-raise-all) require explicit confirmation: `{ confirm: true }` in the request body. Without confirmation, return a dry-run preview of affected satellites.
+- **Per-satellite actions** within the fleet context use: `/api/constellation/{scid}/action`
+- **Long-running operations** (orbit-raise campaigns, fleet firmware rollout) return a task ID for polling: `{ task_id, status, progress_pct, satellites_complete, satellites_remaining }`
+- **Safety gates** — any endpoint that triggers propulsion, mode changes, or FDIR modifications must enforce the same criticality and flight-rule gates as individual satellite operations.

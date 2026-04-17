@@ -1,0 +1,143 @@
+---
+description: Documentation conventions for constellation planning documents — ConOps, coverage analysis, fleet status reports, and maneuver campaign plans
+globs: "**/constellation*.md,**/fleet*.md,**/ConOps*.md"
+alwaysApply: false
+---
+
+# Constellation Planning Document Conventions
+
+These conventions extend `markdown-ops-docs.mdc` for constellation-level planning and reporting documents.
+
+## Document Metadata Block
+
+Every constellation planning document starts with:
+
+```markdown
+**Date:** <DD Month YYYY>
+**Author:** Constellation Manager (Senior Fleet Operations)
+**Constellation:** <name and Walker notation, e.g., Aurora 53°:31/6/1>
+**Shells:** <count and brief description>
+**Coverage Requirement:** <e.g., 95% global between ±60° latitude>
+**Classification:** Mission Operations — For Internal Use
+```
+
+## Coverage Analysis Format
+
+Coverage analysis sections use this structure:
+
+```markdown
+### Coverage Analysis
+
+| Latitude Band | Required Revisit | Achieved Revisit | Min Elevation | Gap Duration (max) | Status |
+|---------------|------------------|------------------|---------------|---------------------|--------|
+| 0°–30° N/S   | < 15 min         | 12.3 min         | 10°           | 8.1 min             | PASS   |
+| 30°–60° N/S  | < 20 min         | 14.7 min         | 10°           | 11.2 min            | PASS   |
+| 60°–80° N/S  | < 30 min         | 28.4 min         | 5°            | 24.6 min            | WATCH  |
+```
+
+Include:
+- Per-latitude-band rows covering the constellation's coverage zone
+- Required vs achieved revisit times
+- Minimum elevation angle used in the analysis
+- Maximum gap duration (longest period without coverage)
+- Status: PASS, WATCH (within 10% of threshold), FAIL
+
+## Fleet Status Report Template
+
+```markdown
+# Fleet Status Report — <Date>
+
+## Constellation Summary
+
+| Metric | Value |
+|--------|-------|
+| Total Satellites | <N> |
+| Operational | <N> |
+| Commissioning | <N> |
+| Maintenance | <N> |
+| Failed | <N> |
+| Fleet Health Score | <0.00–1.00> |
+| Coverage (actual) | <XX.X%> |
+| Coverage (required) | <XX.X%> |
+
+## Per-Shell Status
+
+| Shell | Altitude (km) | Inc (deg) | Planes | Sats Operational / Total | Drift Index |
+|-------|---------------|-----------|--------|--------------------------|-------------|
+
+## Active Anomalies
+
+| Satellite | Anomaly | Severity | Since | Status |
+|-----------|---------|----------|-------|--------|
+
+## Upcoming Maneuver Windows
+
+| Satellite | Type | Planned Epoch | Delta-V (m/s) | Ground Station | Status |
+|-----------|------|---------------|---------------|----------------|--------|
+
+## Conjunction Alerts
+
+| CDM ID | Primary | Secondary | TCA | Pc | Miss Distance (m) | Action |
+|--------|---------|-----------|-----|----|--------------------|--------|
+```
+
+## Maneuver Campaign Plan Template
+
+```markdown
+# Maneuver Campaign Plan — <Campaign Name>
+
+## Campaign Summary
+
+| Field | Value |
+|-------|-------|
+| Objective | <e.g., Station-keeping correction for Polar Shell> |
+| Campaign Type | <SK / Orbit-Raise / Phasing / Collision Avoidance / Disposal> |
+| Affected Satellites | <list or "All in Shell X"> |
+| Total Delta-V Budget | <X.XX m/s per satellite> |
+| Campaign Window | <start date> to <end date> |
+| Ground Stations Required | <list> |
+| Criticality | <CRIT-1 / CRIT-2 / CRIT-3 / Nominal> |
+| Approval Authority | <e.g., Flight Director + Constellation Manager> |
+
+## Prerequisites
+
+| Category | Requirement |
+|----------|-------------|
+| Conjunction Screen | Clear for campaign window (Pc < threshold for all targets) |
+| Fleet Health | All affected satellites in Operational or Maintenance state |
+| Ground Segment | Required stations confirmed available for commanding windows |
+| Propulsion | Sufficient propellant margin for planned delta-V + contingency |
+
+## Execution Timeline
+
+| Phase | Start | End | Action | Satellites |
+|-------|-------|-----|--------|------------|
+| Plan  | T-7d  | T-3d | FD computes, uploads reviewed | All |
+| Arm   | T-1d  | T-12h | Maneuver parameters uploaded, armed confirmed | Batch 1 |
+| Execute | T-0 | T+2h | Burns execute at planned epochs | Batch 1 |
+| Verify | T+2h | T+12h | Post-burn OD, delta-V assessment | Batch 1 |
+
+## Rollback Criteria
+
+Abort or defer the campaign if any of the following occur:
+- New CDM with Pc >= 1e-4 involving any affected satellite
+- Satellite enters safe mode or loses comm during arm phase
+- Ground station outage reduces commanding coverage below minimum
+- Space weather alert (Kp >= 7) during execution window
+
+## Success Criteria
+
+| Criterion | Threshold |
+|-----------|-----------|
+| Delta-V accuracy | Achieved within ±5% of planned |
+| Post-maneuver orbit | Within altitude/drift tolerance |
+| Fleet coverage | No degradation below SLA during campaign |
+| Anomalies introduced | Zero campaign-induced anomalies |
+```
+
+## Cross-Reference Conventions
+
+- Reference individual FOPs by full name: "see NOP_PROP_PREP_4_ORBIT-ADJUST_BURN"
+- Reference fleet states using the state model defined in `constellation-operations.mdc`
+- Reference standards by full designation on first use, abbreviated thereafter (e.g., "CCSDS 508.0-B (CDM)" then "CDM")
+- Gap/issue numbering: G-<Campaign>.<N> with severity CRITICAL / HIGH / MODERATE / LOW
