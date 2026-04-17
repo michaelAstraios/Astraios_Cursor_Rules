@@ -1,17 +1,12 @@
 ---
-description: Word document generation conventions using python-docx for FOP documentation with SRDB/MIB enrichment
-globs: "**/generate_docx*.py,**/generate_c13*.py"
+description: Standard formatting conventions for all python-docx generated Word documents — colors, title page, headers, footers, tables, typography
+globs: "**/generate_docx*.py,**/generate_c13*.py,**/*_to_docx*.py"
 alwaysApply: false
 ---
 
 # DOCX Generation Conventions
 
-## Architecture
-
-The `generate_docx.py` script reads SPELL scripts from `SPELL_Scripts/Updated_Scripts/<SUBSYSTEM>/` and SME reports from markdown files, then generates a formatted Word document with:
-
-1. **Main body** — Per-subsystem FOP catalog (chapters by subsystem)
-2. **Appendices A–I** — Full SME verification reports (one per subsystem)
+These rules apply to **every** Word document generated with `python-docx` in this workspace.
 
 ## Page Setup
 
@@ -22,137 +17,99 @@ The `generate_docx.py` script reads SPELL scripts from `SPELL_Scripts/Updated_Sc
 
 | Token | Hex | Usage |
 |-------|-----|-------|
-| Primary | `#1F4E79` | Titles, headings, footer brand, table headers, horizontal rules |
-| Secondary | `#2E75B6` | TC argument table headers, appendix table headers |
-| Muted text | `#64748B` | Header text (date, doc title), page numbers |
-| Light accent | `#94A3B8` | Header/footer border lines, "Proprietary & Confidential" text |
+| Primary | `#1F4E79` | Titles, headings, footer brand, default table headers, horizontal rules |
+| Secondary | `#2E75B6` | Secondary table headers (sub-tables, detail tables) |
+| Muted text | `#64748B` | Header text, page numbers |
+| Light accent | `#94A3B8` | Header/footer border lines, confidentiality notice |
 | Row stripe | `#E8F0FE` | Alternating table row background (odd data rows) |
-| White | `#FFFFFF` | Table header text |
+| White | `#FFFFFF` | Table header row text |
 
 ## Title Page
 
-The first page is a dedicated title page with no header. Structure:
+Every document starts with a dedicated title page (no header displayed on this page):
 
 1. **6 blank paragraphs** for vertical spacing
-2. **Title:** centered, bold, 28pt, color `#1F4E79`
-3. **Subtitle:** centered, 16pt, color `#64748B` — "Mission Sequence Procedures for HiFly/AutoFly"
+2. **Document title:** centered, bold, 28pt, color `#1F4E79`
+3. **Subtitle:** centered, 16pt, color `#64748B`
 4. **Blank paragraph**
 5. **Horizontal rule:** centered, "━" × 60, 10pt, color `#1F4E79`
 6. **Blank paragraph**
-7. **Metadata fields** (centered, label bold 10pt `#1F4E79`, value 10pt):
-   - Document Version, Date, SRDB Version, Format, Total Procedures, MIB Database, SME Verification, Classification, Author
-   - Space after: 2pt, space before: 0pt per field
+7. **Metadata fields** — centered, label bold 10pt `#1F4E79`, value 10pt, 2pt space after / 0pt before each field. Include fields appropriate to the document (e.g., version, date, author, classification).
 8. **Page break** after title page
 
 ## Header
 
-- `different_first_page_header_footer = True` — no header on title page
+- Set `different_first_page_header_footer = True` so the title page has no header
 - **Left:** Date string, 8pt, color `#64748B`
-- **Right (tab stop at 7.0"):** `"<Title> — v<Version>"`, 8pt, color `#64748B`
-- **Bottom border:** single line, 4pt weight, 1pt space, color `#94A3B8`
+- **Right (tab stop at 7.0"):** Document title + version, 8pt, color `#64748B`
+- **Bottom border:** single line, weight 4, space 1, color `#94A3B8`
 
 ## Footer
 
-Applied to **all pages** including the first page:
+Applied to **all pages** including the title page:
 
 - **Left:** "Astraios", 8pt, **bold**, color `#1F4E79`
 - **Center (tab stop at 3.5"):** "Proprietary & Confidential", 8pt, *italic*, color `#94A3B8`
 - **Right (tab stop at 7.0"):** "Page " + `PAGE` field code, 8pt, color `#64748B`
-- **Top border:** single line, 4pt weight, 1pt space, color `#94A3B8`
+- **Top border:** single line, weight 4, space 1, color `#94A3B8`
 
-The page number uses Word field codes (`w:fldChar` begin/end with `instrText " PAGE "`).
-
-## Document Sections (in order)
-
-1. Title Page
-2. Overview (Heading 1)
-3. Criticality Levels (Heading 1) — table with Level, Definition, Flight Rule Requirements, Examples
-4. Flight Rules (Heading 1) — table with Rule, Name, Threshold/Constraint, Applicability
-5. Subsystem Index (Heading 1) — table with Subsystem, Procedure Count
-6. Procedure Details (Heading 1) → Subsystem (Heading 2) → Procedure (Heading 3)
-7. Procedure Execution Order (Heading 1) — phase tables, mode transitions, dependencies
-8. Appendices A–I — SME verification reports
+Use Word field codes (`w:fldChar` begin/end with `instrText " PAGE "`) for page numbers.
 
 ## Table Formatting
 
-All tables use the `add_table()` helper:
+- **Style:** "Table Grid", center-aligned (`WD_TABLE_ALIGNMENT.CENTER`)
+- **Header row:** white text (`#FFFFFF`), bold, 8pt, background `#1F4E79` (or `#2E75B6` for secondary/detail tables)
+- **Data rows:** 7.5pt font
+- **Alternating row shading:** odd data rows (1-indexed) get `#E8F0FE` background via `w:shd` element
+- **Cell shading helper:** set `w:fill` and `w:val="clear"` on `tcPr > w:shd`
 
-- **Style:** "Table Grid", center-aligned
-- **Header row:** white text (`#FFFFFF`), bold, 8pt, background fill (default `#1F4E79`, TC args/appendices use `#2E75B6`)
-- **Data rows:** 7.5pt font size
-- **Alternating row shading:** odd data rows (1-indexed) get `#E8F0FE` background
-- **Maximum table width** fits letter portrait with 0.75" margins
+## Typography
 
-## Appendix Headings
+| Element | Font Size | Weight / Style |
+|---------|-----------|----------------|
+| Document title | 28pt | Bold |
+| Subtitle | 16pt | Normal |
+| Heading 1 | default | — |
+| Heading 2 | default | — |
+| Heading 3 | default | — |
+| Body text / prose | 9pt | Normal |
+| Metadata field labels | 9–10pt | Bold |
+| Metadata field values | 9–10pt | Normal |
+| Bullet lists ("List Bullet") | 9pt | Normal; nested indent 1.27 cm |
+| Numbered lists ("List Number") | 9pt | Normal; restart numbering per sequence |
+| Code blocks | 7pt | Courier New |
+| Code block spacing | — | 4pt before, 4pt after |
+| TM impact text | 8pt | Normal |
 
-Appendix headings are **not** numbered chapters. They use a custom style:
+## Section Break Headings (e.g., Appendices)
+
+For major section breaks that should NOT use auto-numbered chapter headings:
 
 - Centered, `page_break_before = True`
 - 36pt space before, 24pt space after
 - Bold, 22pt, color `#1F4E79`
 - Followed by horizontal rule: "━" × 80, 8pt, color `#1F4E79`, 12pt space after
 
-## Per-Procedure Entry
-
-Each FOP within the Procedure Details chapter contains:
-
-1. **Heading 3** — procedure name
-2. **Metadata fields** (label bold 9pt + value 9pt, 1pt space after each):
-   Type, Criticality, Description, Prerequisites, Warnings, Constraints, Entry Conditions, Exit Conditions, Standards, Flight Rules, SRDB, Version
-3. **Direct TM Impacts** (Heading 5) — paragraph, 8pt
-4. **Indirect TM Impacts** (Heading 5) — paragraph, 8pt
-5. **Procedure Steps** (Heading 4) — table [Step, Action]
-6. **Telecommands Used** (Heading 4) — table [TC ID, MIB Name, Description, # Args]
-7. **TC Arguments** (Heading 5, per TC) — table [Arg Mnemonic, Description, Type/Bits, Unit, Enum Values] with `#2E75B6` header
-8. **Telemetry Verification Points** (Heading 4) — table [Script Param, MIB Mnemonic, Description, Operator, Expected Value, Unit]
-9. **Telemetry Parameters Read** (Heading 4) — table [Script Param, MIB Mnemonic, Description, Type/Bits, Unit, Enum Values]
-10. **PPF Parameters** (Heading 4) — table [Parameter Key, Usage]
-
 ## Markdown-to-DOCX Heading Mapping
+
+When converting markdown content into a DOCX:
 
 | Markdown | DOCX Level | Context |
 |----------|------------|---------|
-| `#` | Heading 1 (or Heading 3 for appendix `#`) | Top-level report sections |
-| `##` | Heading 2 (or Heading 3 for appendix `##`) | Subsections, FOP group headers |
-| `###` | Heading 3 (or Heading 4 for appendix `###`) | Individual FOP titles |
-| `####` | Heading 4 (or Heading 5 for appendix `####`) | Per-FOP subsections |
+| `#` | Heading 1 | Top-level sections (or Heading 3 inside appendices) |
+| `##` | Heading 2 | Subsections (or Heading 3 inside appendices) |
+| `###` | Heading 3 | Individual entries (or Heading 4 inside appendices) |
+| `####` | Heading 4 / 5 | Sub-sections within entries |
 
-## Body Text Rules
+## Inline Markdown Rendering
 
-- **Prose paragraphs:** 9pt
-- **Bold inline:** `**text**` → bold run, 9pt
-- **Bullet lists:** "List Bullet" style, 9pt; nested bullets indent 1.27 cm
-- **Numbered lists:** "List Number" style, 9pt; numbering restarts at each new sequence
-- **Code blocks:** Courier New, 7pt, 4pt space before/after
+- `**bold text**` → bold run at current paragraph font size
+- `- bullet` → "List Bullet" style; `  - nested` → indent 1.27 cm
+- `1. item` → "List Number" style; restart numbering when a non-numbered element intervenes
+- `` ``` `` code blocks → Courier New 7pt paragraph
+- Pipe tables → Word tables using the table formatting rules above
+- `---` horizontal rules → skip (used as visual separators in markdown, not rendered)
 
-## MIB/SRDB Enrichment
+## Enum Value Display
 
-The generator uses `mib.db` (SQLite) to enrich TC/TM tables:
-
-- TC mnemonics resolve to descriptions, PUS service type, argument definitions (encoding, bits, unit, enums)
-- TM parameters resolve to descriptions, units, calibration curves, enum values
-- Logical names (e.g., `EPS_BUS_V`) map to V5000 mnemonics via `LOGICAL_TM_MAP`
-- C-13 payload parameters use `C13_PARAM_DESCS` for descriptions
-- Verification operators map: `eq` → "equals", `bw` → "between" (with MIN/MAX), `ge` → ">=", `le` → "<=", `gt` → ">", `lt` → "<", `ne` → "not equal"
-- Enum values display up to 6 entries in `key=value` format, with "(+N more)" for overflow
-
-## Appendix Order
-
-| Appendix | Subsystem | Source File |
-|----------|-----------|-------------|
-| A | FDIR | FDIR_FOP_Verification_Report.md |
-| B | SYS | SME_SYS_FOP_Verification_Report.md |
-| C | PROP | SME_PROP_FOP_Verification_Report.md |
-| D | EPS | EPS_FOP_SME_Verification_Report.md |
-| E | GNC | GNC_FOP_SME_Verification_Report.md |
-| F | TTC | SME_TTC_FOP_Verification_Report.md |
-| G | CDH | CDH_FOP_SME_Verification_Report.md |
-| H | C-12 | C12_Payload_FOP_SME_Verification_Report.md |
-| I | C-13 | C-13_Payload_SME_Verification_Report.md |
-
-## Subsystem Processing Order
-
-```python
-SUBSYSTEM_ORDER = ["C-12", "C-13", "CDH", "EPS", "FDIR",
-                   "GNC", "PROP", "PUS", "SYS", "TCS", "TTC"]
-```
+When showing enumeration values in tables, display up to 6 entries in `key=value` format separated by semicolons. If more exist, append `(+N more)`.
